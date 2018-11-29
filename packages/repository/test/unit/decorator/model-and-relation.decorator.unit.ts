@@ -7,6 +7,7 @@ import {MetadataInspector} from '@loopback/context';
 import {expect} from '@loopback/testlab';
 import {RelationMetadata} from '../../..';
 import {
+  belongsTo,
   belongsToUniquely,
   embedsMany,
   embedsOne,
@@ -93,12 +94,28 @@ describe('model decorator', () => {
     @property({type: 'string', id: true, generated: true})
     id: string;
 
-    @belongsToUniquely(() => Customer)
+    @belongsTo(
+      () => Customer,
+      {},
+      {
+        id: true,
+        generated: false,
+      },
+    )
     customerId: string;
 
     // Validates that property no longer requires a parameter
     @property()
     isShipped: boolean;
+  }
+
+  @model()
+  class RegistrationDate extends Entity {
+    @belongsToUniquely(() => Customer)
+    customerId: number;
+
+    @property()
+    registeredOn: Date;
   }
 
   @model()
@@ -287,6 +304,19 @@ describe('model decorator', () => {
   });
 
   it('passes property metadata from belongsToUniquely', () => {
+    const propMeta =
+      MetadataInspector.getAllPropertyMetadata(
+        MODEL_PROPERTIES_KEY,
+        RegistrationDate.prototype,
+      ) || /* istanbul ignore next */ {};
+
+    expect(propMeta.customerId).to.containEql({
+      id: true,
+      generated: false,
+    });
+  });
+
+  it('passes property metadata from belongsTo', () => {
     const propMeta =
       MetadataInspector.getAllPropertyMetadata(
         MODEL_PROPERTIES_KEY,
